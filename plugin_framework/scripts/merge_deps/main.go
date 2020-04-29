@@ -12,7 +12,19 @@ import (
 const (
 	suggestionsFileName          = "suggestions"
 	mergeSuggestedModuleFileName = "suggestion.mod"
+
+	None    Section = ""
+	Module  Section = "module"
+	Go      Section = "go"
+	Require Section = "require"
+	Replace Section = "replace"
 )
+
+type Section string
+
+func (s Section) String() string {
+	return string(s)
+}
 
 type GoModuleDescriptor struct {
 	Module  string
@@ -55,7 +67,9 @@ func main() {
 }
 
 func mergeModules(suggestionsModule *GoModuleDescriptor, pluginModule *GoModuleDescriptor) {
-	pluginModule.Version = suggestionsModule.Version
+	if len(suggestionsModule.Version) > 0 {
+		pluginModule.Version = suggestionsModule.Version
+	}
 	if suggestionsModule.Require != nil {
 		if pluginModule.Require == nil {
 			pluginModule.Require = suggestionsModule.Require
@@ -92,6 +106,7 @@ func readModuleFile(filePath string) (*GoModuleDescriptor, error) {
 	goModule := &GoModuleDescriptor{}
 
 	scanner := bufio.NewScanner(depFile)
+	section := None
 	for scanner.Scan() {
 		line := scanner.Text()
 
@@ -100,39 +115,46 @@ func readModuleFile(filePath string) (*GoModuleDescriptor, error) {
 
 		//skip empty and closing lines
 		if depInfoLen <= 1 || depInfo[0] == "//" {
+			if depInfoLen == 1 && depInfo[0] == ")" {
+				//closing section indicator
+				section = None
+			}
 			continue
 		}
 
-		switch depInfoLen {
-		case 2:
-			key := depInfo[0]
-			switch key {
-			case "module":
+		switch section {
+		case Require:
+			goModule.Require[depInfo[0]] = strings.TrimSpace(line)
+		case Replace:
+			goModule.Replace[depInfo[0]] = strings.TrimSpace(line)
+		default:
+			switch depInfo[0] {
+			case Module.String():
+				section = Module
 				goModule.Module = depInfo[1]
-			case "go":
-				goModule.Version = depInfo[1]
-			case "require":
 				continue
-			case "replace":
+			case Go.String():
+				section = Go
+				goModule.Version = depInfo[1]
+				continue
+			case Require.String():
+				section = Require
+				if goModule.Require == nil {
+					goModule.Require = map[string]string{}
+				}
+				continue
+			case Replace.String():
+				section = Replace
+				if goModule.Replace == nil {
+					goModule.Replace = map[string]string{}
+				}
 				continue
 			default:
 				if depInfo[1] == "(" {
 					return nil, fmt.Errorf("unkown section: [%s]. "+
 						"Expected on of 'module | go | require | replace'", line)
 				}
-				if goModule.Require == nil {
-					goModule.Require = map[string]string{}
-				}
-				goModule.Require[depInfo[0]] = strings.TrimSpace(line)
 			}
-		case 4:
-			if goModule.Replace == nil {
-				goModule.Replace = map[string]string{}
-			}
-			goModule.Replace[depInfo[0]] = strings.TrimSpace(line)
-		default:
-			return nil, fmt.Errorf("malformed dependency: [%s]. "+
-				"Expected format 'NAME VERSION' or 'NAME VERSION => REPLACE_NAME REPLACE_VERSION'", line)
 		}
 	}
 	return goModule, scanner.Err()
