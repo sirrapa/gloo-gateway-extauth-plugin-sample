@@ -33,7 +33,7 @@ RUN bsdtar --strip-components=1 -xvf ${PLUGIN_FRAMEWORK_VERSION}.zip
 COPY plugin_framework/Makefile.framework Makefile
 COPY plugin_framework/scripts scripts
 
-COPY go.mod .
+COPY scripts/resolve-deps.sh go.mod go.sum ./
 RUN make get-glooe-info
 #RUN rm -f plugin.mod *.zip
 

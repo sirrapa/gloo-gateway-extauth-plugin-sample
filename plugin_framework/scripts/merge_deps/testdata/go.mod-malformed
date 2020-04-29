@@ -1,8 +1,0 @@
-module github.com/solo-io/ext-auth-plugin-implementation
-
-go 1.14
-
-require (
-	go.uber.org/zap v1.13.0 => go.uber.org/zap v2.0.0
-)
-

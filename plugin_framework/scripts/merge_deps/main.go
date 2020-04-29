@@ -126,7 +126,14 @@ func readModuleFile(filePath string) (*GoModuleDescriptor, error) {
 		case Require:
 			goModule.Require[depInfo[0]] = strings.TrimSpace(line)
 		case Replace:
-			goModule.Replace[depInfo[0]] = strings.TrimSpace(line)
+			var key []string
+			for _, fragment := range depInfo {
+				if fragment == "=>" {
+					break
+				}
+				key = append(key,fragment)
+			}
+			goModule.Replace[strings.Join(key," ")] = strings.TrimSpace(line)
 		default:
 			switch depInfo[0] {
 			case Module.String():
