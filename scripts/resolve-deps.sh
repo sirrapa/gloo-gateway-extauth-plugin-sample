@@ -1,9 +1,9 @@
 #!/bin/bash
 
 if ! make compare-deps; then
- mv go.mod plugin.mod
+ cp go.mod plugin.mod
  status=$?
- for i in {1..100}; do
+ for i in {1..200}; do
     make merge-deps
     mv suggestion.mod go.mod
     make compare-deps
