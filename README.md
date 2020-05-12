@@ -22,44 +22,56 @@ You can create and push the image by running the following command, where `PLUGI
 `GLOOE_VERSION` is the desired Gloo Enterprise version, e.g. `1.3.4` to run a test plugin build.
 
 ```bash
-PLUGIN_FRAMEWORK_VERSION=<examples-version> GLOOE_VERSION=<target-glooe-version> make framework-image
+PLUGIN_FRAMEWORK_VERSION=<examples-version> \
+GLOOE_VERSION=<target-glooe-version> 
+make framework-image
 ```
 If you only want to build the image, you should run:
 ```bash
-PLUGIN_FRAMEWORK_VERSION=<examples-version> GLOOE_VERSION=<target-glooe-version> make build-framework-image
+PLUGIN_FRAMEWORK_VERSION=<examples-version> \
+GLOOE_VERSION=<target-glooe-version> 
+make build-framework-image
 ```
 For just pushing the already build image, you should run:
 ```bash
-PLUGIN_FRAMEWORK_VERSION=<examples-version> GLOOE_VERSION=<target-glooe-version> make push-framework-image
+PLUGIN_FRAMEWORK_VERSION=<examples-version> \
+GLOOE_VERSION=<target-glooe-version> 
+make push-framework-image
 ```
 
 ### plugin-image
 The `plugin-image` target merges and compares the dependencies of your plugin module with the dependencies of the Gloo Enterprise one. 
 If no exact match occurred, information about mismatches is written to stdout, which contains entries that you can add to your `go.mod` 
-file to bring your dependencies in sync with the Gloo Enterprise ones (see [Possible mismatch types](#markdown-header-possible-mismatch-types)).
+file to bring your dependencies in sync with the Gloo Enterprise ones (see [Possible mismatch types](#possible-mismatch-types)).
 If the shared dependencies match _exactly_ (this is another constraint imposed by Go plugins, more info 
 [here](https://docs.solo.io/gloo/latest/guides/dev/writing_auth_plugins/#build-helper-tools)), the plugin will be compiled and verified
 for the targeted Gloo Enterprise version, inside a docker container using the `Dockerfile` at the root of this repository.
 
 You can create and push the image by running the following command, where `GLOOE_VERSION` is the desired Gloo Enterprise version, e.g. `1.3.4`.
 ```bash
-PLUGIN_FRAMEWORK_VERSION=<examples-version> GLOOE_VERSION=<target-glooe-version> make plugin-image
+PLUGIN_FRAMEWORK_VERSION=<examples-version> \
+GLOOE_VERSION=<target-glooe-version> 
+make plugin-image
 ```
 If you only want to build the image, you should run:
 ```bash
-PLUGIN_FRAMEWORK_VERSION=<examples-version> GLOOE_VERSION=<target-glooe-version> make build-plugin-image
+PLUGIN_FRAMEWORK_VERSION=<examples-version> \
+GLOOE_VERSION=<target-glooe-version> 
+make build-plugin-image
 ```
 For just pushing the already build image, you should run:
 ```bash
-PLUGIN_FRAMEWORK_VERSION=<examples-version> GLOOE_VERSION=<target-glooe-version> make push-plugin-image
+PLUGIN_FRAMEWORK_VERSION=<examples-version> \
+GLOOE_VERSION=<target-glooe-version> 
+make push-plugin-image
 ```
 
-## Configurable options
+#### Configurable options
 The following options can be used to create a framework and/or plugin images
 These options can be set by changing its value in the `Makefile`, exporting them as a environment variable (`export GLOOE_VERSION=1.3.4`)
 or as command argument (`GLOOE_VERSION=1.3.4 make <target>` )
 
-### framework-image target
+##### framework-image target
 | Option | Default | Description |
 | ------ | ------- | ----------- |
 | GO_BUILD_IMAGE | golang:1.14.0-buster | Set this variable to the image name and version used for building the plugin |
@@ -69,7 +81,7 @@ or as command argument (`GLOOE_VERSION=1.3.4 make <target>` )
 | PLUGIN_FRAMEWORK_VERSION | v0.2.2-beta8 | Set this variable to the version of the plugin framework you want to target |
 | STORAGE_HOSTNAME | storage.googleapis.com | Set this variable to the hostname of your custom (air gapped) storage server |
 
-### plugin-image target
+##### plugin-image target
 | Option | Default | Description |
 | ------ | ------- | ----------- |
 | GLOOE_VERSION | 1.3.1 | Set this variable to the version of GlooE you want to target |
