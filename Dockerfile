@@ -1,45 +1,46 @@
 # Prepare the build environment.
-# This stage is parametrized to replicate the same environment Gloo Enterprise was built in.
+# Use this stage to add certificates and setting proxies
 # All ARGs need to be set via the docker `--build-arg` flags.
-ARG GO_BUILD_IMAGE
-FROM $GO_BUILD_IMAGE AS build-env
-
-RUN apt-get update -qq && apt-get install -yq bsdtar vim
-
-# Download the specified version of the extauth plugin framework and
-# compose plugin code by merging the implementation with the framework code
-# This stage is parametrized to replicate the same environment Gloo Enterprise was built in.
-# All ARGs need to be set via the docker `--build-arg` flags.
-FROM build-env as plugin
-ARG ENV_GLOOE_VERSION
-ARG ENV_STORAGE_HOSTNAME
-ARG PLUGIN_FRAMEWORK_VERSION
+ARG FRAMEWORK_BUILD_IMAGE
+ARG RUN_IMAGE
+FROM $FRAMEWORK_BUILD_IMAGE AS framework
+ARG PLUGIN_FRAMEWORK_PATH
+ARG GLOOE_VERSION
 ARG PLUGIN_PATH
 
 ENV GONOSUMDB=*
-ENV GOPROXY=
 ENV GO111MODULE=on
-ENV CGO_ENABLED=0
-# ENV GOFLAGS="-mod="
-ENV PLUGIN_FRAMEWORK_PATH=github.com/solo-io/ext-auth-plugin-examples
-ENV GLOOE_VERSION=$ENV_GLOOE_VERSION
-ENV STORAGE_HOSTNAME=$ENV_STORAGE_HOSTNAME
+ENV CGO_ENABLED=1
 
-WORKDIR $PLUGIN_PATH
+WORKDIR /go/src/$PLUGIN_PATH
 
-# TODO replace this code block with an go dependency
-ADD https://${GITHUB_PROXY}${PLUGIN_FRAMEWORK_PATH}/archive/master.zip ${PLUGIN_PATH}/${PLUGIN_FRAMEWORK_VERSION}.zip
-RUN bsdtar --strip-components=1 -xvf ${PLUGIN_FRAMEWORK_VERSION}.zip
-COPY plugin_framework/Makefile.framework Makefile
-COPY plugin_framework/scripts scripts
+# Copy framework files to workdir
+RUN cp -Rfp /go/src/$PLUGIN_FRAMEWORK_PATH/. /go/src/$PLUGIN_PATH/
 
-COPY scripts/resolve-deps.sh go.mod go.sum ./
-RUN make get-glooe-info
-#RUN rm -f plugin.mod *.zip
+# Fail if Makefile does not exist
+# This means that the framework files copy failed
+RUN if [ ! -f "Makefile" ]; then echo "Framework Makefile not found in workdir:" && pwd && ls -al && exit 1; fi
 
-
-FROM plugin
-ARG PLUGIN_PATH
+# Copy plugin's mod file
+COPY go.mod go.sum ./
+# Copy the plugin implementation
 COPY pkg plugins/required_header/pkg
 
-VOLUME $PLUGIN_PATH
+# Calling the make rules from the framework's Makefile...
+# Resolve dependencies and ensure dependency version usage and build plugin
+RUN make get-glooe-info resolve-deps
+RUN echo "// Generated for GlooE $GLOOE_VERSION" | cat - go.mod > go.new && mv go.new go.mod
+RUN make build-plugins || { echo "Used module:" | cat - go.mod; exit 1; }
+
+# This stage builds the final image containing just the plugin .so files. It can really be any linux/amd64 image.
+FROM $RUN_IMAGE
+ARG PLUGIN_PATH
+
+# Copy compiled plugin file from previous stage
+RUN mkdir /compiled-auth-plugins
+COPY --from=framework /go/src/$PLUGIN_PATH/plugins/RequiredHeader.so /compiled-auth-plugins/
+COPY --from=framework /go/src/$PLUGIN_PATH/go.mod /compiled-auth-plugins/
+
+# This is the command that will be executed when the container is run.
+# It has to copy the compiled plugin file(s) to a directory.
+CMD cp /compiled-auth-plugins/*.so /auth-plugins/

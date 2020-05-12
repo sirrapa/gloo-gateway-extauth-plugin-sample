@@ -1,72 +1,78 @@
+
 .PHONY: format
 format:
 	gofmt -w -e pkg scripts
 	goimports -w -e pkg scripts
 
 #----------------------------------------------------------------------------------
-# Retrieve GlooE build information
+# Set build variables
 #----------------------------------------------------------------------------------
-GLOOE_DIR := _glooe
-_ := $(shell mkdir -p $(GLOOE_DIR))
+# Set this variable to the name of your plugin
+PLUGIN_NAME ?= sample
+
+# Set this variable to the version of your plugin
+PLUGIN_VERSION ?= 0.0.1
 
 # Set this variable to the version of GlooE you want to target
 GLOOE_VERSION ?= 1.3.1
 
+# Set this variable to the image name and version used for building the plugin
+GO_BUILD_IMAGE ?= golang:1.14.0-buster
+RUN_IMAGE ?= alpine:3.10
+
+# Set this variable to the module name of the (forked) plugin framework you want to target
+PLUGIN_FRAMEWORK_PATH ?= github.com/sirrapa/ext-auth-plugin-examples
+
+# Set this variable to the url of your custom (air gapped) github server
+PLUGIN_FRAMEWORK_URL ?= https://$(PLUGIN_FRAMEWORK_PATH)
+
+# Set this variable to the version of the plugin framework you want to target
+PLUGIN_FRAMEWORK_VERSION ?= v0.2.2-beta8
+#PLUGIN_FRAMEWORK_VERSION ?= master
+
 # Set this variable to the hostname of your custom (air gapped) storage server
 STORAGE_HOSTNAME ?= storage.googleapis.com
 
-.PHONY: get-glooe-info
-get-glooe-info: $(GLOOE_DIR)/go.mod $(GLOOE_DIR)/dependencies $(GLOOE_DIR)/verify-plugins-linux-amd64 $(GLOOE_DIR)/build_env
-
-$(GLOOE_DIR)/go.mod:
-	wget --tries=3 -O $@ http://$(STORAGE_HOSTNAME)/gloo-ee-dependencies/$(GLOOE_VERSION)/go.mod
-
-$(GLOOE_DIR)/dependencies:
-	wget --tries=3 -O $@ http://$(STORAGE_HOSTNAME)/gloo-ee-dependencies/$(GLOOE_VERSION)/dependencies
-
-$(GLOOE_DIR)/verify-plugins-linux-amd64:
-	wget --tries=3 -O $@ http://$(STORAGE_HOSTNAME)/gloo-ee-dependencies/$(GLOOE_VERSION)/verify-plugins-linux-amd64
-
-$(GLOOE_DIR)/build_env:
-	wget --tries=3 -O $@ http://$(STORAGE_HOSTNAME)/gloo-ee-dependencies/$(GLOOE_VERSION)/build_env
+FRAMEWORK_BUILD_IMAGE := gloo-ext-auth-plugin-framework:$(PLUGIN_FRAMEWORK_VERSION)
+PLUGIN_PATH := $(shell grep module go.mod | cut -d ' ' -f 2-)
+PLUGIN_IMAGE := gloo-ext-auth-plugin-$(PLUGIN_FRAMEWORK_VERSION)-$(PLUGIN_NAME):$(PLUGIN_VERSION)
 
 #----------------------------------------------------------------------------------
-# Compare dependencies against GlooE
+# Build an docker image which contains the plugin framework
 #----------------------------------------------------------------------------------
-.PHONY: get-plugin-dependencies
-get-plugin-dependencies: go.mod
-	rm -rf vendor
-	go list -m all > plugin_dependencies
-	go mod vendor
-
-.PHONY: compare-deps
-compare-deps: get-plugin-dependencies $(GLOOE_DIR)/dependencies
-	go run scripts/compare_deps/main.go plugin_dependencies $(GLOOE_DIR)/dependencies
+.PHONY: framework-image
+framework-image: pull-framework-image build-framework-image push-framework-image
+push-framework-image:
+	docker push $(FRAMEWORK_BUILD_IMAGE)
+build-framework-image:
+	docker build \
+		--build-arg GO_BUILD_IMAGE=$(GO_BUILD_IMAGE) \
+		--build-arg GLOOE_VERSION=$(GLOOE_VERSION) \
+		--build-arg PLUGIN_FRAMEWORK_PATH=$(PLUGIN_FRAMEWORK_PATH) \
+		--build-arg PLUGIN_FRAMEWORK_URL=$(PLUGIN_FRAMEWORK_URL) \
+		--build-arg PLUGIN_FRAMEWORK_VERSION=$(PLUGIN_FRAMEWORK_VERSION) \
+		--build-arg STORAGE_HOSTNAME=$(STORAGE_HOSTNAME) \
+		-t $(FRAMEWORK_BUILD_IMAGE) -f Dockerfile.framework .
+pull-framework-image:
+	docker pull $(GO_BUILD_IMAGE)
 
 #----------------------------------------------------------------------------------
-# Build plugins
+# Build an docker image which contains the compiled plugin implementation
 #----------------------------------------------------------------------------------
-EXAMPLES_DIR := plugins
-SOURCES := $(shell find . -name "*.go" | grep -v test)
-
-define get_glooe_var
-$(shell grep $(1) $(GLOOE_DIR)/build_env | cut -d '=' -f 2-)
-endef
-
-.PHONY: build-plugins
-build-plugins: $(GLOOE_DIR)/build_env $(GLOOE_DIR)/verify-plugins-linux-amd64
+.PHONY: plugin-image
+plugin-image: pull-plugin-image build-plugin-image push-plugin-image
+push-plugin-image:
+	docker push $(PLUGIN_IMAGE)
+build-plugin-image:
 	docker build --no-cache \
-		--build-arg GO_BUILD_IMAGE=$(call get_glooe_var,GO_BUILD_IMAGE) \
-		--build-arg GC_FLAGS=$(call get_glooe_var,GC_FLAGS) \
-		--build-arg VERIFY_SCRIPT=$(GLOOE_DIR)/verify-plugins-linux-amd64 \
-		.
+		--build-arg FRAMEWORK_BUILD_IMAGE=$(FRAMEWORK_BUILD_IMAGE) \
+		--build-arg GLOOE_VERSION=$(GLOOE_VERSION) \
+		--build-arg PLUGIN_FRAMEWORK_PATH=$(PLUGIN_FRAMEWORK_PATH) \
+		--build-arg PLUGIN_FRAMEWORK_VERSION=$(PLUGIN_FRAMEWORK_VERSION) \
+		--build-arg PLUGIN_PATH=$(PLUGIN_PATH) \
+		--build-arg RUN_IMAGE=$(RUN_IMAGE) \
+		--build-arg STORAGE_HOSTNAME=$(STORAGE_HOSTNAME) \
+		-t $(PLUGIN_IMAGE) .
+pull-plugin-image:
+	docker pull $(FRAMEWORK_BUILD_IMAGE)
 
-.PHONY: build-plugins-for-tests
-build-plugins-for-tests: $(EXAMPLES_DIR)/required_header/RequiredHeader.so
-
-$(EXAMPLES_DIR)/required_header/RequiredHeader.so: $(SOURCES)
-	go build -buildmode=plugin -o $(EXAMPLES_DIR)/required_header/RequiredHeader.so $(EXAMPLES_DIR)/required_header/plugin.go
-
-clean:
-	rm -rf _glooe
-	rm suggestions mismatched_dependencies.json plugin_dependencies
