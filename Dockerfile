@@ -6,13 +6,23 @@ FROM $GO_BUILD_IMAGE AS build
 ARG GO_BUILD_IMAGE
 ARG RUN_IMAGE
 ARG GLOOE_VERSION
+ARG PLUGIN_NAME
 ARG PLUGIN_PATH
-ARG PLUGIN_BUILD_NAME
 ARG PLUGIN_FRAMEWORK_PATH
 ARG PLUGIN_FRAMEWORK_VERSION
 ARG PLUGIN_FRAMEWORK_URL
 ARG STORAGE_HOSTNAME
 
+# Fail if not all ARGs are set
+RUN if [ ! $GO_BUILD_IMAGE ]; then echo "Required GO_BUILD_IMAGE build argument not set" && exit 1; fi
+RUN if [ ! $RUN_IMAGE ]; then echo "Required RUN_IMAGE build argument not set" && exit 1; fi
+RUN if [ ! $GLOOE_VERSION ]; then echo "Required GLOOE_VERSION build argument not set" && exit 1; fi
+RUN if [ ! $PLUGIN_NAME ]; then echo "Required PLUGIN_NAME build argument not set" && exit 1; fi
+RUN if [ ! $PLUGIN_PATH ]; then echo "Required PLUGIN_PATH build argument not set" && exit 1; fi
+RUN if [ ! $PLUGIN_FRAMEWORK_PATH ]; then echo "Required PLUGIN_FRAMEWORK_PATH build argument not set" && exit 1; fi
+RUN if [ ! $PLUGIN_FRAMEWORK_VERSION ]; then echo "Required PLUGIN_FRAMEWORK_VERSION build argument not set" && exit 1; fi
+RUN if [ ! $PLUGIN_FRAMEWORK_URL ]; then echo "Required PLUGIN_FRAMEWORK_URL build argument not set" && exit 1; fi
+RUN if [ ! $STORAGE_HOSTNAME ]; then echo "Required STORAGE_HOSTNAME build argument not set" && exit 1; fi
 
 ARG GLOOE_DIR=_glooe
 ARG VERIFY_SCRIPT=$GLOOE_DIR/verify-plugins-linux-amd64
