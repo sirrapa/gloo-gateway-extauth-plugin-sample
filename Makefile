@@ -41,10 +41,7 @@ PLUGIN_PATH := $(shell grep module plugin/go.mod | cut -d ' ' -f 2-)
 # Build an docker image which contains the compiled plugin implementation
 #----------------------------------------------------------------------------------
 .PHONY: plugin-image
-plugin-image: build-plugin-image push-plugin-image
-push-plugin-image:
-	docker push $(PLUGIN_IMAGE)
-build-plugin-image:
+plugin-image:
 	docker build --no-cache \
 		--build-arg GO_BUILD_IMAGE=$(GO_BUILD_IMAGE) \
 		--build-arg GLOOE_VERSION=$(GLOOE_VERSION) \
