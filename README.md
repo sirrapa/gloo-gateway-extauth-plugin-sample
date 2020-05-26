@@ -43,7 +43,8 @@ or as command argument (`GLOOE_VERSION=1.3.4 make <target>` )
 
 | Option | Default | Description |
 | ------ | ------- | ----------- |
-| GO_BUILD_IMAGE | golang:1.14.0-alpine | Set this variable to the image name and version used for building the plugin. This should be compatible with the desired GlooE version|
+| GO_BUILD_IMAGE | golang:1.14.0-buster | Set this variable to the image name and version used for building the plugin.|
+| GO_VERIFY_IMAGE | golang:1.14.0-alpine | Set this variable to the image name and version used for verifying the plugin. This should be compatible with the desired GlooE version|
 | GLOOE_VERSION | 1.3.1 | Set this variable to the version of GlooE you want to target |
 | PLUGIN_FRAMEWORK_PATH | github.com/sirrapa/ext-auth-plugin-examples | Set this variable to the module name of the (forked) plugin framework you want to target |
 | PLUGIN_FRAMEWORK_URL | https://github.com/sirrapa/ext-auth-plugin-examples | Set this variable to the url of the (forked) plugin framework you want to target |

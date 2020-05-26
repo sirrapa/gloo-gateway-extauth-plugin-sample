@@ -8,20 +8,21 @@ format:
 # Set build variables
 #----------------------------------------------------------------------------------
 # Set this variable to the image name and version used for building the plugin
-GO_BUILD_IMAGE ?= golang:1.14.0-alpine
+GO_BUILD_IMAGE ?= golang:1.14.0-buster
+
+# Set this variable to the image name and version used for verifying the plugin
+GO_VERIFY_IMAGE ?= golang:1.14.0-alpine
 
 RUN_IMAGE ?= alpine:3.10
 
 # Set this variable to the version of GlooE you want to target
 GLOOE_VERSION ?= 1.3.1
 
-# Set this variable to the name of your plugin
-PLUGIN_NAME ?= Sample
+# Set this variable to the name of your build plugin
+PLUGIN_NAME ?= Sample.so
 
 # Set this variable to the version of your plugin
 PLUGIN_VERSION ?= 0.0.1
-
-PLUGIN_IMAGE ?= gloo-ext-auth-plugin-$(GLOOE_VERSION)-sample:$(PLUGIN_VERSION)
 
 # Set this variable to the module name of the (forked) plugin framework you want to target
 PLUGIN_FRAMEWORK_PATH ?= github.com/sirrapa/ext-auth-plugin-examples
@@ -36,6 +37,7 @@ PLUGIN_FRAMEWORK_VERSION ?= v0.2.2-beta8
 STORAGE_HOSTNAME ?= storage.googleapis.com
 
 PLUGIN_PATH := $(shell grep module plugin/go.mod | cut -d ' ' -f 2-)
+PLUGIN_IMAGE ?= gloo-ext-auth-plugin-$(PLUGIN_FRAMEWORK_VERSION)-sample-$(GLOOE_VERSION):$(PLUGIN_VERSION)
 
 #----------------------------------------------------------------------------------
 # Build an docker image which contains the compiled plugin implementation
@@ -44,6 +46,7 @@ PLUGIN_PATH := $(shell grep module plugin/go.mod | cut -d ' ' -f 2-)
 plugin-image:
 	docker build --no-cache \
 		--build-arg GO_BUILD_IMAGE=$(GO_BUILD_IMAGE) \
+		--build-arg GO_VERIFY_IMAGE=$(GO_VERIFY_IMAGE) \
 		--build-arg GLOOE_VERSION=$(GLOOE_VERSION) \
 		--build-arg PLUGIN_FRAMEWORK_PATH=$(PLUGIN_FRAMEWORK_PATH) \
 		--build-arg PLUGIN_FRAMEWORK_VERSION=$(PLUGIN_FRAMEWORK_VERSION) \
