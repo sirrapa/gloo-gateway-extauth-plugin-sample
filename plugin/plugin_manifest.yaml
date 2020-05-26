@@ -1,0 +1,9 @@
+name: Sample
+pluginFileName: Sample.so
+exportedSymbolName: Plugin
+config:
+  RequiredHeader: my-auth-header
+  AllowedValues:
+    - foo
+    - bar
+    - baz

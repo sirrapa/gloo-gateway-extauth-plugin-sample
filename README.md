@@ -10,66 +10,30 @@ This repository contains a sample implementation of the
 When you are writing your own Ext Auth plugins, you must target a specific Gloo Enterprise version. This is because of the 
 nature of Go plugins (you can find more info in [this section](https://docs.solo.io/gloo/latest/guides/dev/writing_auth_plugins/#build-helper-tools) 
 of the [Auth Plugin Developer Guide](https://docs.solo.io/gloo/latest/guides/dev/writing_auth_plugins/)). 
+With each release Gloo Enterprise publishes the information that you will require to replicate its build environment. 
 The [External auth plugin examples](https://github.com/solo-io/ext-auth-plugin-examples) repo contains example code to create such an image.
 But it also contains validation code we ideally do not want in the plugin implementation repo's.
 This template repo only contains the plugin implementation code and will use the example repo's code as a dependency to build the plugin
 according the validation rules defined in this dependency.
 
-## Makefile overview
-Following is an overview of the most relevant `make` targets.
+## Build 
 
-### framework-image
-The `framework-image` target runs inside a docker container using the [](Dockerfile.framework) and will download the targeted 
-tagged version of the example repo, resolve and compares its dependencies with the dependencies of the desired Gloo Enterprise version. 
-If no exact match occurred, The tagged version of the example repo is incompatible with the desired Gloo Enterprise version. 
+### Makefile target plugin-image 
+The `plugin-image` target runs inside a docker container using the [](Dockerfile) and download the targeted tagged version of the example repo, 
+resolve, merge and compares the dependencies of your plugin module with the dependencies of the Gloo Enterprise one. 
+If no exact match occurred, information about mismatches is written to stdout, which contains entries that you can add to your `go.mod` 
+file to bring your dependencies in sync with the Gloo Enterprise ones (see [Possible mismatch types](#possible-mismatch-types)).
+If the shared dependencies match _exactly_ (this is another constraint imposed by Go plugins, more info 
+[here](https://docs.solo.io/gloo/latest/guides/dev/writing_auth_plugins/#build-helper-tools)), the plugin will be compiled and verified
+for the targeted Gloo Enterprise version.
 
-You can create and push the image by running the following command, where `PLUGIN_FRAMEWORK_VERSION` is the desired External auth plugin examples version, e.g. `v0.2.1` and
+You can create the image by running the following command, where `PLUGIN_FRAMEWORK_VERSION` is the desired External auth plugin examples version, e.g. `v0.2.1` and
 `GLOOE_VERSION` is the desired Gloo Enterprise version, e.g. `1.3.4` to run a test plugin build.
 
 ```bash
 PLUGIN_FRAMEWORK_VERSION=<examples-version> \
 GLOOE_VERSION=<target-glooe-version> 
-make framework-image
-```
-If you only want to build the image, you should run:
-```bash
-PLUGIN_FRAMEWORK_VERSION=<examples-version> \
-GLOOE_VERSION=<target-glooe-version> 
-make build-framework-image
-```
-For just pushing the already build image, you should run:
-```bash
-PLUGIN_FRAMEWORK_VERSION=<examples-version> \
-GLOOE_VERSION=<target-glooe-version> 
-make push-framework-image
-```
-
-### plugin-image
-The `plugin-image` target runs inside a docker container using the [](Dockerfile) and will merges and compares the dependencies 
-of your plugin module with the dependencies of the Gloo Enterprise one. 
-If no exact match occurred, information about mismatches is written to stdout, which contains entries that you can add to your `go.mod` 
-file to bring your dependencies in sync with the Gloo Enterprise ones (see [Possible mismatch types](#possible-mismatch-types)).
-If the shared dependencies match _exactly_ (this is another constraint imposed by Go plugins, more info 
-[here](https://docs.solo.io/gloo/latest/guides/dev/writing_auth_plugins/#build-helper-tools)), the plugin will be compiled and verified
-for the targeted Gloo Enterprise version
-
-You can create and push the image by running the following command, where `GLOOE_VERSION` is the desired Gloo Enterprise version, e.g. `1.3.4`.
-```bash
-PLUGIN_FRAMEWORK_VERSION=<examples-version> \
-GLOOE_VERSION=<target-glooe-version> 
 make plugin-image
-```
-If you only want to build the image, you should run:
-```bash
-PLUGIN_FRAMEWORK_VERSION=<examples-version> \
-GLOOE_VERSION=<target-glooe-version> 
-make build-plugin-image
-```
-For just pushing the already build image, you should run:
-```bash
-PLUGIN_FRAMEWORK_VERSION=<examples-version> \
-GLOOE_VERSION=<target-glooe-version> 
-make push-plugin-image
 ```
 
 #### Configurable options
@@ -77,19 +41,9 @@ The following options can be used to create a framework and/or plugin images
 These options can be set by changing its value in the `Makefile`, exporting them as a environment variable (`export GLOOE_VERSION=1.3.4`)
 or as command argument (`GLOOE_VERSION=1.3.4 make <target>` )
 
-##### framework-image target
 | Option | Default | Description |
 | ------ | ------- | ----------- |
-| GO_BUILD_IMAGE | golang:1.14.0-buster | Set this variable to the image name and version used for building the plugin |
-| GLOOE_VERSION | 1.3.1 | Set this variable to the version of GlooE you want to target |
-| PLUGIN_FRAMEWORK_PATH | github.com/sirrapa/ext-auth-plugin-examples | Set this variable to the module name of the (forked) plugin framework you want to target |
-| PLUGIN_FRAMEWORK_URL | https://github.com/sirrapa/ext-auth-plugin-examples | Set this variable to the url of the (forked) plugin framework you want to target |
-| PLUGIN_FRAMEWORK_VERSION | v0.2.2-beta8 | Set this variable to the version of the (forked) plugin framework you want to target |
-| STORAGE_HOSTNAME | storage.googleapis.com | Set this variable to the hostname of your custom (air gapped) storage server |
-
-##### plugin-image target
-| Option | Default | Description |
-| ------ | ------- | ----------- |
+| GO_BUILD_IMAGE | golang:1.14.0-alpine | Set this variable to the image name and version used for building the plugin. This should be compatible with the desired GlooE version|
 | GLOOE_VERSION | 1.3.1 | Set this variable to the version of GlooE you want to target |
 | PLUGIN_FRAMEWORK_PATH | github.com/sirrapa/ext-auth-plugin-examples | Set this variable to the module name of the (forked) plugin framework you want to target |
 | PLUGIN_FRAMEWORK_URL | https://github.com/sirrapa/ext-auth-plugin-examples | Set this variable to the url of the (forked) plugin framework you want to target |
@@ -129,8 +83,8 @@ using a [require] clause"__
 a `require` (but no `replace`) for the same module. This is a problem for the same reasons mentioned in `PluginMissingReplace`.
 - Solution: since there is no way for you to modify the Gloo `go.mod` file, the only solution to this error is to remove 
 the offending `replace` entry from your `go.mod` file and add a `require` entry matching the Gloo one. If this is not 
-possible given the dependencies of your plugin, please join [solo-io community Slack](https://slack.solo.io/) and let us know, 
-so we can think about a solution together.
+possible given the dependencies of your plugin, please join [solo-io community Slack](https://slack.solo.io/) and let them know, 
+so they can think about a solution together.
 
 
 

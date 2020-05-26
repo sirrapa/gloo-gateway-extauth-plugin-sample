@@ -16,27 +16,27 @@ var (
 	UnexpectedConfigError = func(typ interface{}) error {
 		return errors.New(fmt.Sprintf("unexpected config type %T", typ))
 	}
-	_ api.ExtAuthPlugin = new(RequiredHeaderPlugin)
+	_ api.ExtAuthPlugin = new(SamplePlugin)
 )
 
-type RequiredHeaderPlugin struct{}
+type SamplePlugin struct{}
 
 type Config struct {
 	RequiredHeader string
 	AllowedValues  []string
 }
 
-func (p *RequiredHeaderPlugin) NewConfigInstance(ctx context.Context) (interface{}, error) {
+func (p *SamplePlugin) NewConfigInstance(ctx context.Context) (interface{}, error) {
 	return &Config{}, nil
 }
 
-func (p *RequiredHeaderPlugin) GetAuthService(ctx context.Context, configInstance interface{}) (api.AuthService, error) {
+func (p *SamplePlugin) GetAuthService(ctx context.Context, configInstance interface{}) (api.AuthService, error) {
 	config, ok := configInstance.(*Config)
 	if !ok {
 		return nil, UnexpectedConfigError(configInstance)
 	}
 
-	logger(ctx).Infow("Parsed RequiredHeaderAuthService config",
+	logger(ctx).Infow("Parsed SampleAuthService config",
 		zap.Any("requiredHeader", config.RequiredHeader),
 		zap.Any("allowedHeaderValues", config.AllowedValues),
 	)
@@ -46,24 +46,24 @@ func (p *RequiredHeaderPlugin) GetAuthService(ctx context.Context, configInstanc
 		valueMap[v] = true
 	}
 
-	return &RequiredHeaderAuthService{
+	return &SampleAuthService{
 		RequiredHeader: config.RequiredHeader,
 		AllowedValues:  valueMap,
 	}, nil
 }
 
-type RequiredHeaderAuthService struct {
+type SampleAuthService struct {
 	RequiredHeader string
 	AllowedValues  map[string]bool
 }
 
 // You can use the provided context to perform operations that are bound to the services lifecycle.
-func (c *RequiredHeaderAuthService) Start(context.Context) error {
+func (c *SampleAuthService) Start(context.Context) error {
 	// no-op
 	return nil
 }
 
-func (c *RequiredHeaderAuthService) Authorize(ctx context.Context, request *api.AuthorizationRequest) (*api.AuthorizationResponse, error) {
+func (c *SampleAuthService) Authorize(ctx context.Context, request *api.AuthorizationRequest) (*api.AuthorizationResponse, error) {
 	for key, value := range request.CheckRequest.GetAttributes().GetRequest().GetHttp().GetHeaders() {
 		if key == c.RequiredHeader {
 			logger(ctx).Infow("Found required header, checking value.", "header", key, "value", value)
