@@ -19,7 +19,7 @@ RUN if [ ! $RUN_IMAGE ]; then echo "Required RUN_IMAGE build argument not set" &
     if [ ! $GLOOE_VERSION ]; then echo "Required GLOOE_VERSION build argument not set" && exit 1; fi && \
     if [ ! $PLUGIN_BUILD_NAME ]; then echo "Required PLUGIN_BUILD_NAME build argument not set" && exit 1; fi && \
     if [ ! $PLUGIN_MODULE_PATH ]; then echo "Required PLUGIN_MODULE_PATH build argument not set" && exit 1; fi && \
-    if [ ! $$PLUGIN_NAME ]; then echo "Required $PLUGIN_NAME build argument not set" && exit 1; fi && \
+    if [ ! $PLUGIN_NAME ]; then echo "Required PLUGIN_NAME build argument not set" && exit 1; fi && \
     if [ ! $PLUGIN_BUILDER_MODULE_PATH ]; then echo "Required PLUGIN_BUILDER_MODULE_PATH build argument not set" && exit 1; fi && \
     if [ ! $PLUGIN_BUILDER_VERSION ]; then echo "Required PLUGIN_BUILDER_VERSION build argument not set" && exit 1; fi && \
     if [ ! $PLUGIN_BUILDER_URL ]; then echo "Required PLUGIN_BUILDER_URL build argument not set" && exit 1; fi && \
