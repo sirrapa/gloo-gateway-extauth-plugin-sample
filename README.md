@@ -27,17 +27,17 @@ If the shared dependencies match _exactly_ (this is another constraint imposed b
 [here](https://docs.solo.io/gloo/latest/guides/dev/writing_auth_plugins/#build-helper-tools)), the plugin will be compiled and verified
 for the targeted Gloo Enterprise version.
 
-You can create the image by running the following command, where `PLUGIN_FRAMEWORK_VERSION` is the desired External auth plugin examples version, e.g. `v0.2.1` and
+You can create the image by running the following command, where `PLUGIN_BUILDER_VERSION` is the desired External auth plugin examples version, e.g. `v0.2.1` and
 `GLOOE_VERSION` is the desired Gloo Enterprise version, e.g. `1.3.4` to run a test plugin build.
 
 ```bash
-PLUGIN_FRAMEWORK_VERSION=<examples-version> \
+PLUGIN_BUILDER_VERSION=<examples-version> \
 GLOOE_VERSION=<target-glooe-version> 
 make plugin-image
 ```
 
 #### Configurable options
-The following options can be used to create a framework and/or plugin images
+The following options can be used to create plugin images
 These options can be set by changing its value in the `Makefile`, exporting them as a environment variable (`export GLOOE_VERSION=1.3.4`)
 or as command argument (`GLOOE_VERSION=1.3.4 make <target>` )
 
@@ -45,9 +45,9 @@ or as command argument (`GLOOE_VERSION=1.3.4 make <target>` )
 | ------ | ------- | ----------- |
 | GO_BUILD_IMAGE | golang:1.14.0-alpine | Set this variable to the image name and version used for building the plugin.|
 | GLOOE_VERSION | 1.3.1 | Set this variable to the version of GlooE you want to target |
-| PLUGIN_FRAMEWORK_PATH | github.com/solo-io/ext-auth-plugin-examples | Set this variable to the module name of the (forked) plugin framework you want to target |
-| PLUGIN_FRAMEWORK_URL | https://github.com/solo-io/ext-auth-plugin-examples | Set this variable to the url of the (forked) plugin framework you want to target |
-| PLUGIN_FRAMEWORK_VERSION | master | Set this variable to the version of the (forked) plugin framework you want to target |
+| PLUGIN_BUILDER_MODULE_PATH | github.com/solo-io/ext-auth-plugin-examples | Set this variable to the module name of the (forked) plugin builder you want to target |
+| PLUGIN_BUILDER_URL | https://github.com/solo-io/ext-auth-plugin-examples | Set this variable to the url of the (forked) plugin builder you want to target |
+| PLUGIN_BUILDER_VERSION | master | Set this variable to the version of the (forked) plugin builder you want to target |
 | PLUGIN_BUILD_NAME | Sample.so | Set this variable to the name of your build plugin |
 | PLUGIN_VERSION | 0.0.1 | Set this variable to the version of your plugin |
 | RUN_IMAGE | alpine:3.11 | Set this variable to the image name and version used for running the plugin |

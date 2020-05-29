@@ -13,7 +13,10 @@ GO_BUILD_IMAGE ?= golang:1.14.0-alpine
 RUN_IMAGE ?= alpine:3.11
 
 # Set this variable to the version of GlooE you want to target
-GLOOE_VERSION ?= 1.3.1
+GLOOE_VERSION ?= 1.3.4
+
+# Set this variable to the name of your plugin (no spaces)
+PLUGIN_NAME ?= sample
 
 # Set this variable to the name of your build plugin
 PLUGIN_BUILD_NAME ?= Sample.so
@@ -22,19 +25,19 @@ PLUGIN_BUILD_NAME ?= Sample.so
 PLUGIN_VERSION ?= 0.0.1
 
 # Set this variable to the module name of the (forked) plugin framework you want to target
-PLUGIN_FRAMEWORK_PATH ?= github.com/solo-io/ext-auth-plugin-examples
+PLUGIN_BUILDER_MODULE_PATH ?= github.com/solo-io/ext-auth-plugin-examples
 
 # Set this variable to the url of your custom (air gapped) github server
-PLUGIN_FRAMEWORK_URL ?= https://$(PLUGIN_FRAMEWORK_PATH)
+PLUGIN_BUILDER_URL ?= https://$(PLUGIN_BUILDER_MODULE_PATH)
 
 # Set this variable to the version of the plugin framework you want to target
-PLUGIN_FRAMEWORK_VERSION ?= master
+PLUGIN_BUILDER_VERSION ?= master
 
 # Set this variable to the hostname of your custom (air gapped) storage server
 STORAGE_HOSTNAME ?= storage.googleapis.com
 
 PLUGIN_MODULE_PATH := $(shell grep module go.mod | cut -d ' ' -f 2-)
-PLUGIN_IMAGE ?= gloo-ext-auth-plugin-$(PLUGIN_FRAMEWORK_VERSION)-sample-$(GLOOE_VERSION):$(PLUGIN_VERSION)
+PLUGIN_IMAGE ?= gloo-ext-auth-plugin-$(PLUGIN_BUILDER_VERSION)-sample-$(GLOOE_VERSION):$(PLUGIN_VERSION)
 
 #----------------------------------------------------------------------------------
 # Build an docker image which contains the compiled plugin implementation
@@ -44,11 +47,12 @@ plugin-image:
 	docker build --no-cache \
 		--build-arg GO_BUILD_IMAGE=$(GO_BUILD_IMAGE) \
 		--build-arg GLOOE_VERSION=$(GLOOE_VERSION) \
-		--build-arg PLUGIN_FRAMEWORK_PATH=$(PLUGIN_FRAMEWORK_PATH) \
-		--build-arg PLUGIN_FRAMEWORK_URL=$(PLUGIN_FRAMEWORK_URL) \
-		--build-arg PLUGIN_FRAMEWORK_VERSION=$(PLUGIN_FRAMEWORK_VERSION) \
+		--build-arg PLUGIN_BUILDER_MODULE_PATH=$(PLUGIN_BUILDER_MODULE_PATH) \
+		--build-arg PLUGIN_BUILDER_URL=$(PLUGIN_BUILDER_URL) \
+		--build-arg PLUGIN_BUILDER_VERSION=$(PLUGIN_BUILDER_VERSION) \
 		--build-arg PLUGIN_BUILD_NAME=$(PLUGIN_BUILD_NAME) \
 		--build-arg PLUGIN_MODULE_PATH=$(PLUGIN_MODULE_PATH) \
+		--build-arg PLUGIN_NAME=$(PLUGIN_NAME) \
 		--build-arg RUN_IMAGE=$(RUN_IMAGE) \
 		--build-arg STORAGE_HOSTNAME=$(STORAGE_HOSTNAME) \
 		-t $(PLUGIN_IMAGE)  .
