@@ -34,7 +34,7 @@ replace (
 	github.com/hashicorp/vault/api => github.com/hashicorp/vault/api v1.0.5-0.20191108163347-bdd38fca2cff
 	github.com/pseudomuto/protoc-gen-doc => github.com/pseudomuto/protoc-gen-doc v1.0.0
 	github.com/sclevine/agouti => github.com/yuval-k/agouti v0.0.0-20190109124522-0e71d6bad483
-	github.com/solo-io/ext-auth-plugin-examples => github.com/sirrapa/ext-auth-plugin-examples v0.2.2-beta9
+	github.com/solo-io/ext-auth-plugin-examples => github.com/solo-io/ext-auth-plugin-examples v0.2.2-0.20200529040336-7e92ee63ae5d
 
 	// kube 1.17
 	k8s.io/api => k8s.io/api v0.17.1
