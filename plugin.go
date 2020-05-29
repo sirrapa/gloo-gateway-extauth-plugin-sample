@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/solo-io/ext-auth-plugins/api"
-	impl "sirrapa.com/k8s/gloo-gateway/extauth-plugin/sample/pkg"
+	impl "sirrapa.com/k8s/gloo-gateway/extauth/plugins/sample/pkg"
 )
 
 func main() {}
