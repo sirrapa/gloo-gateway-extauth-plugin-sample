@@ -46,6 +46,11 @@ COPY pkg/ ./pkg/
 
 RUN make get-glooe-info -f /go/src/$PLUGIN_BUILDER_MODULE_PATH/Makefile
 
+# Verify we are using the same build image
+RUN GLOO_BUILD_IMAGE=$(grep GO_BUILD_IMAGE $GLOOE_DIR/build_env | cut -d '=' -f 2-) && \
+    if [ "$GLOO_BUILD_IMAGE" != "$GO_BUILD_IMAGE" ]; then echo "GO_BUILD_IMAGE should be ${GLOO_BUILD_IMAGE}" && exit 1; fi
+
+# Resolve dependencies
 RUN go run /go/src/$PLUGIN_BUILDER_MODULE_PATH/scripts/resolve_deps/main.go go.mod $GLOOE_DIR/dependencies
 RUN echo "// Generated for GlooE $GLOOE_VERSION" | cat - go.mod > go.new && mv go.new go.mod
 
@@ -56,7 +61,8 @@ RUN CGO_ENABLED=1 GOARCH=amd64 GOOS=linux \
 
 # Run the script to verify that the plugin can be loaded by Gloo
 RUN chmod +x $VERIFY_SCRIPT && \
-    $VERIFY_SCRIPT -pluginDir plugins -manifest plugin_manifest.yaml
+    $VERIFY_SCRIPT -pluginDir plugins -manifest plugin_manifest.yaml \
+	|| { echo "Used module:" | cat - go.mod; exit 1; }
 
 # This stage builds the final image containing just the plugin .so files. It can really be any linux/amd64 image.
 FROM $RUN_IMAGE
